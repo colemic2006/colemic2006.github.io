@@ -243,15 +243,27 @@ document.addEventListener("DOMContentLoaded", function () {
   stateFilter.addEventListener("change",  applyFilters);
 
   // ── TIMESTAMP ────────────────────────────────────────────────
-  // Derive the "last updated" date from when this page was actually last
-  // modified/deployed (Last-Modified header) instead of a hand-maintained date.
-  const lastUpdated = new Date(document.lastModified);
-  document.getElementById("lastUpdated").textContent =
-    "Updated " + (isNaN(lastUpdated.getTime())
-      ? "recently"
-      : lastUpdated.toLocaleDateString("en-US", {
-          month: "short", day: "numeric", year: "numeric"
-        }));
+  // Prefer the camp data's Last-Modified (when the Google Sheet was last
+  // updated); fall back to when this page itself was last modified/deployed.
+  function setUpdatedLabel(source) {
+    const d = source ? new Date(source) : new Date(document.lastModified);
+    document.getElementById("lastUpdated").textContent =
+      "Updated " + (isNaN(d.getTime())
+        ? "recently"
+        : d.toLocaleDateString("en-US", {
+            month: "short", day: "numeric", year: "numeric"
+          }));
+  }
+
+  // Show the page date immediately, then refine with the CSV's Last-Modified
+  // header when the data source exposes it. Any failure keeps the fallback.
+  setUpdatedLabel(null);
+  fetch(DATA_URL, { method: "HEAD" })
+    .then(function (res) {
+      const lastMod = res.headers.get("Last-Modified");
+      if (lastMod) setUpdatedLabel(lastMod);
+    })
+    .catch(function () { /* keep the page-date fallback */ });
 
   // ── MODAL ────────────────────────────────────────────────────
   const modal        = document.getElementById("submitModal");
