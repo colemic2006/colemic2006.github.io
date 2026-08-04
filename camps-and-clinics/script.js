@@ -5,8 +5,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const FORMSPREE_URL = "https://formspree.io/f/xykbpbdo";
 
-  const LAST_UPDATED = new Date("2026-07-29");
-
   const tableBody    = document.querySelector("#campTable tbody");
   const searchBox    = document.getElementById("searchBox");
   const monthFilter  = document.getElementById("monthFilter");
@@ -245,10 +243,15 @@ document.addEventListener("DOMContentLoaded", function () {
   stateFilter.addEventListener("change",  applyFilters);
 
   // ── TIMESTAMP ────────────────────────────────────────────────
+  // Derive the "last updated" date from when this page was actually last
+  // modified/deployed (Last-Modified header) instead of a hand-maintained date.
+  const lastUpdated = new Date(document.lastModified);
   document.getElementById("lastUpdated").textContent =
-    "Updated " + LAST_UPDATED.toLocaleDateString("en-US", {
-      month: "short", day: "numeric", year: "numeric"
-    });
+    "Updated " + (isNaN(lastUpdated.getTime())
+      ? "recently"
+      : lastUpdated.toLocaleDateString("en-US", {
+          month: "short", day: "numeric", year: "numeric"
+        }));
 
   // ── MODAL ────────────────────────────────────────────────────
   const modal        = document.getElementById("submitModal");
