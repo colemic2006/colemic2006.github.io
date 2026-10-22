@@ -138,6 +138,20 @@ document.addEventListener("DOMContentLoaded", function () {
     resultCount.textContent = `${data.length} result${data.length !== 1 ? "s" : ""}`;
   }
 
+  // Parse a camp's START date from the sheet's free-form Date text, which can be
+  // a single day ("May 2 2026"), a same-month range ("Jun 10-12 2026") or a
+  // cross-month range ("Apr 29-May 1 2027"). The start month/day is always first
+  // and the 4-digit year last; combine those so new Date() never has to guess
+  // (it mis-parses raw ranges like "Apr 29-May 1 2027" into the year 2001).
+  function campStartDate(raw) {
+    const s = (raw || "").trim();
+    const md = s.match(/^([A-Za-z]{3,9})\s+(\d{1,2})/);
+    const yr = s.match(/(\d{4})\s*$/);
+    if (!md || !yr) return null;
+    const d = new Date(`${md[1]} ${md[2]} ${yr[1]}`);
+    return isNaN(d) ? null : d;
+  }
+
   function renderTable(data) {
     tableBody.innerHTML = "";
 
@@ -149,17 +163,15 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     data.forEach(camp => {
       const row = document.createElement("tr");
-      const dateStr = (camp.Date || "").replace(/(\w+ \d+)-\d+/, '$1');
-      const campDate = new Date(dateStr);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (!isNaN(campDate) && campDate < today) {
+      const campDate = campStartDate(camp.Date);
+      const isPast = campDate !== null && campDate < today;
+      if (isPast) {
         row.classList.add("past-camp");
-        row.querySelectorAll('td').forEach(function(td) {
-          td.style.color = '#cc0000';
-        });
       }
 
       const replayVal = (camp.Replay || "").toString().trim().toUpperCase();
@@ -178,7 +190,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <td><a href="${camp.Link || "#"}" target="_blank">Details ↗</a></td>
       `;
 
-      if (!isNaN(campDate) && campDate < today) {
+      if (isPast) {
         row.querySelectorAll('td').forEach(function(td) {
           td.style.color = '#cc0000';
         });
